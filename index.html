@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Code Controlled QR on deck.gl Map with Hexagon Layer</title>
+    <script src="https://unpkg.com/deck.gl@latest/dist.min.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@2.0.0/dist/maplibre-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+   
+  </head>
+  <body>
+    <div id="map"></div>
+    <canvas id="video-canvas"></canvas>
+    <div id="toggle-container">
+      <label for="toggle">Show Hexagon Layer</label>
+      <input type="checkbox" id="toggle" />
+      <div id="slider-container">
+        <label for="scale-slider"
+          >Scale Factor: <span id="scale-value">0.00001</span></label
+        >
+        <input
+          type="range"
+          id="scale-slider"
+          min="0.000001"
+          max="0.0001"
+          step="0.000001"
+          value="0.00001"
+        />
+      </div>
+      <div id="manual-toggle-container">
+        <label for="manual-toggle">Manual Control</label>
+        <input type="checkbox" id="manual-toggle" />
+      </div>
+      <div id="manual-controls">
+        <button id="move-up">Up</button>
+        <button id="move-down">Down</button>
+        <button id="move-left">Left</button>
+        <button id="move-right">Right</button>
+      </div>
+    </div>
+    <div id="tooltip"></div>
+    <script>
+      // Destructure required components from deck.gl
+      const {
+        DeckGL,
+        HexagonLayer,
+        MapboxOverlay,
+        LineLayer,
+        ScatterplotLayer,
+      } = deck;
+
+      // Initialize variables
+      let videoCanvas, videoCtx, cvImg, opencvjs, deckgl;
+      let showHexagonLayer = true;
+      let scaleFactor = 0.00001;
+      let manualControl = false;
+
+      // Initial view state
+      const INITIAL_VIEW_STATE = {
+        longitude: -73.9413184,
+        latitude: 40.7508189,
+        zoom: 16,
+        pitch: 0,
+        bearing: 0,
+      };
+
+      // Initial QR code position
+      const initialQRPosition = [
+        INITIAL_VIEW_STATE.longitude,
+        INITIAL_VIEW_STATE.latitude,
+      ];
+
+      let QRPosition = [...initialQRPosition];
+      let QRRotation = 0;
+
+      // Load OpenCV.js
+      async function loadOpenCVJS() {
+        return new Promise((resolve, reject) => {
+          opencvjs = document.createElement("script");
+          opencvjs.src = "https://docs.opencv.org/4.9.0/opencv.js";
+          opencvjs.onload = () => (cv["onRuntimeInitialized"] = resolve);
+          opencvjs.onerror = () =>
+            reject(new Error("Failed to load OpenCV.js"));
+          document.body.appendChild(opencvjs);
+        });
+      }
+
+      // Initialize video and canvas
+      async function initializeVideoAndCanvas() {
+        try {
+          await loadOpenCVJS();
+          videoCanvas = document.getElementById("video-canvas");
+          videoCtx = videoCanvas.getContext("2d");
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1024, height: 768 },
+          });
+          const video = document.createElement("video");
+          video.srcObject = stream;
+          video.play();
+          setInterval(() => captureFrame(video), 20);
+        } catch (err) {
+          console.error("Video initialization error:", err);
+        }
+      }
+
+      // Capture and process video frames
+      async function captureFrame(video) {
+        videoCtx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+        cvImg = cv.imread(videoCanvas);
+        const qcd = new cv.QRCodeDetector();
+        const decodedInfo = new cv.StringVector();
+        const points = new cv.Mat();
+        const straightQrCode = new cv.MatVector();
+        if (
+          qcd.detectAndDecodeMulti(cvImg, decodedInfo, points, straightQrCode)
+        ) {
+          for (let i = 0; i < decodedInfo.size(); i++) {
+            const p = points.row(i).data32F;
+            const center = calculateCenter(p);
+            updateQRPosition(center);
+            drawQRCodeOutline(cvImg, p);
+          }
+          updateLayers();
+        }
+        cv.imshow("video-canvas", cvImg);
+        [qcd, decodedInfo, points, straightQrCode, cvImg].forEach((item) =>
+          item.delete()
+        );
+      }
+
+      // Helper functions for QR code processing
+      function calculateCenter(points) {
+        return {
+          x: (points[0] + points[2] + points[4] + points[6]) / 4,
+          y: (points[1] + points[3] + points[5] + points[7]) / 4,
+        };
+      }
+
+      function updateQRPosition(center) {
+        QRPosition[0] =
+          initialQRPosition[0] +
+          (center.x - videoCanvas.width / 2) * scaleFactor;
+        QRPosition[1] =
+          initialQRPosition[1] +
+          (center.y - videoCanvas.height / 2) * scaleFactor;
+      }
+
+      function drawQRCodeOutline(img, points) {
+        const pointMatVector = new cv.MatVector();
+        pointMatVector.push_back(cv.matFromArray(4, 1, cv.CV_32SC2, points));
+        cv.polylines(
+          img,
+          pointMatVector,
+          true,
+          new cv.Scalar(0, 255, 0, 255),
+          2,
+          cv.LINE_AA
+        );
+        pointMatVector.delete();
+      }
+
+      // Load trees data
+      async function loadtreesData() {
+        const response = await fetch("trees.json");
+        const data = await response.json();
+        return data.features;
+      }
+
+      // Initialize tooltip
+      const tooltip = document.getElementById("tooltip");
+
+      // Update deck.gl layers
+      async function updateLayers() {
+        if (window.deckOverlay) {
+          const treesData = await loadtreesData();
+          const layers = [];
+
+          if (showHexagonLayer) {
+            layers.push(
+              new HexagonLayer({
+                id: "hexagon-layer",
+                data: [
+                  ...treesData,
+                  {
+                    geometry: {
+                      coordinates: QRPosition,
+                    },
+                  },
+                ],
+                getPosition: (d) => d.geometry.coordinates,
+                radius: 50,
+                elevationScale: 1,
+                extruded: true,
+                pickable: true,
+                opacity: 0.85,
+                colorRange: [
+                  [1, 152, 189],
+                  [73, 227, 206],
+                  [216, 254, 181],
+                  [254, 237, 177],
+                  [254, 173, 84],
+                  [209, 55, 78],
+                ],
+              })
+            );
+          } else {
+            layers.push(
+              new ScatterplotLayer({
+                id: "scatterplot-layer",
+                data: treesData,
+                getPosition: (d) => d.geometry.coordinates,
+                getFillColor: (d) => {
+                  const color = d.properties.color;
+                  return [color >> 16, (color >> 8) & 255, color & 255];
+                },
+                getRadius: 5,
+                pickable: true,
+                onHover: ({ object, x, y }) => {
+                  if (object) {
+                    tooltip.style.display = "block";
+                    tooltip.style.left = `${x}px`;
+                    tooltip.style.top = `${y}px`;
+                    tooltip.innerHTML = `
+                      <strong>Tree Info:</strong><br>
+                      Genus Species: ${object.properties.GenusSpecies}<br>
+                      DBH: ${object.properties.DBH}<br>
+                      Condition: ${object.properties.TPCondition}<br>
+                      Planted Date: ${
+                        object.properties.PlantedDate || "N/A"
+                      }<br>
+                      Risk Rating: ${object.properties.RiskRating || "N/A"}
+                    `;
+                  } else {
+                    tooltip.style.display = "none";
+                  }
+                },
+              })
+            );
+          }
+
+          layers.push(
+            new LineLayer({
+              id: "line-layer",
+              data: [
+                {
+                  sourcePosition: [QRPosition[0], QRPosition[1], 0],
+                  targetPosition: [QRPosition[0], QRPosition[1], 1000],
+                },
+              ],
+              getSourcePosition: (d) => d.sourcePosition,
+              getTargetPosition: (d) => d.targetPosition,
+              getColor: [0, 255, 0],
+              getWidth: 5,
+            })
+          );
+
+          window.deckOverlay.setProps({ layers });
+        }
+      }
+
+      // Initialize deck.gl
+      async function initializeDeckGL() {
+        const treesData = await loadtreesData();
+        const map = new maplibregl.Map({
+          container: "map",
+          center: [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude],
+          zoom: INITIAL_VIEW_STATE.zoom,
+          pitch: INITIAL_VIEW_STATE.pitch,
+          bearing: INITIAL_VIEW_STATE.bearing,
+          style:
+            "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+          pitch: 30,
+        });
+
+        const deckOverlay = new MapboxOverlay({
+          layers: [],
+        });
+
+        map.addControl(deckOverlay);
+        window.deckOverlay = deckOverlay;
+      }
+
+      // Toggle switch event listener
+      document.getElementById("toggle").addEventListener("change", (event) => {
+        showHexagonLayer = event.target.checked;
+        updateLayers();
+      });
+
+      // Scale slider event listener
+      document
+        .getElementById("scale-slider")
+        .addEventListener("input", (event) => {
+          scaleFactor = parseFloat(event.target.value);
+          document.getElementById(
+            "scale-value"
+          ).textContent = scaleFactor.toFixed(6);
+        });
+
+      // Manual control event listeners
+      document
+        .getElementById("manual-toggle")
+        .addEventListener("change", (event) => {
+          manualControl = event.target.checked;
+          document.getElementById(
+            "manual-controls"
+          ).style.display = manualControl ? "block" : "none";
+          updateLayers();
+        });
+
+      document.getElementById("move-up").addEventListener("click", () => {
+        QRPosition[1] += 0.0001;
+        updateLayers();
+      });
+
+      document.getElementById("move-down").addEventListener("click", () => {
+        QRPosition[1] -= 0.0001;
+        updateLayers();
+      });
+
+      document.getElementById("move-left").addEventListener("click", () => {
+        QRPosition[0] -= 0.0001;
+        updateLayers();
+      });
+
+      document.getElementById("move-right").addEventListener("click", () => {
+        QRPosition[0] += 0.0001;
+        updateLayers();
+      });
+
+      // Initialize the application
+      initializeVideoAndCanvas();
+      initializeDeckGL();
+    </script>
+  </body>
+</html>
