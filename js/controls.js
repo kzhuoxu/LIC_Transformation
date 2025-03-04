@@ -50,6 +50,12 @@ function initializeControls() {
     updateLayers();
   });
 
+  document.getElementById("citibike-toggle").addEventListener("change", (event) => {
+    showCitibikeStations = event.target.checked;
+    updateLayers();
+  });
+
+
   // Manual movement buttons
   document.getElementById("move-up").addEventListener("click", () => {
     QRPosition[1] += 0.0001;

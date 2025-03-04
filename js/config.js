@@ -25,3 +25,4 @@ let QRRotation = 0;
 let qrWeight = 1; // Add new variable for QR weight
 let showNeighborhoods = true;  // Whether to show neighborhood highlighting
 let showBikeRoutes = true;  // Whether to show bike routes
+let showCitibikeStations = true; // Whether to show Citibike stations

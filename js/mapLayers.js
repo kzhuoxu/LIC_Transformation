@@ -104,6 +104,12 @@ async function updateLayers() {
       layers.push(createBikeRoutesLayer(bikeRoutesData));
     }
 
+    // Add Citibike stations layer if enabled
+    if (showCitibikeStations) {
+      const citibikeData = await loadCitibikeData();
+      layers.push(createCitibikeLayer(citibikeData));
+    }
+
     if (showHexagonLayer) {
       layers.push(
         new HexagonLayer({
@@ -311,5 +317,57 @@ function updateBikeRouteTooltip(info) {
     `;
   } else {
     tooltip.style.display = "none";
+  }
+}
+
+// Add this function to fetch and load Citibike station data
+async function loadCitibikeData() {
+  try {
+    // Fetch directly from the Citibike API
+    const response = await fetch("https://gbfs.citibikenyc.com/gbfs/en/station_information.json");
+    const data = await response.json();
+    return data.data.stations;
+  } catch (error) {
+    console.error("Error loading Citibike station data:", error);
+    return [];
+  }
+}
+
+
+// Add this function to create a Citibike stations layer
+function createCitibikeLayer(citibikeData) {
+  return new ScatterplotLayer({
+    id: "citibike-layer",
+    data: citibikeData,
+    pickable: true,
+    opacity: 0.8,
+    stroked: true,
+    filled: true,
+    radiusScale: 6,
+    radiusMinPixels: 4,
+    radiusMaxPixels: 12,
+    lineWidthMinPixels: 1,
+    getPosition: d => [d.lon, d.lat], // Matches your data structure from the API
+    getRadius: d => Math.sqrt(d.capacity || 10),
+    getFillColor: [0, 105, 217], // Citibike blue color
+    getLineColor: [255, 255, 255],
+    onHover: updateCitibikeTooltip
+  });
+}
+
+// Add tooltip function for Citibike stations
+function updateCitibikeTooltip(info) {
+  const tooltip = document.getElementById("tooltip");
+  if (info.object) {
+    const { name, station_id, capacity, lat, lon } = info.object;
+    tooltip.style.display = "block";
+    tooltip.style.left = `${info.x}px`;
+    tooltip.style.top = `${info.y}px`;
+    tooltip.innerHTML = `
+      <strong>${name || 'Citibike Station'}</strong><br>
+      Station ID: ${station_id}<br>
+      Capacity: ${capacity || 'N/A'}<br>
+      Location: [${lat.toFixed(5)}, ${lon.toFixed(5)}]
+    `;
   }
 }
