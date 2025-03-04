@@ -38,6 +38,18 @@ function initializeControls() {
       updateLayers();
     });
 
+  // Add neighborhood toggle
+  document.getElementById("neighborhood-toggle").addEventListener("change", (event) => {
+    showNeighborhoods = event.target.checked;
+    updateLayers();
+  });
+
+  // Add bike routes toggle
+  document.getElementById("bike-routes-toggle").addEventListener("change", (event) => {
+    showBikeRoutes = event.target.checked;
+    updateLayers();
+  });
+
   // Manual movement buttons
   document.getElementById("move-up").addEventListener("click", () => {
     QRPosition[1] += 0.0001;
