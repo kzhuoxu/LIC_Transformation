@@ -55,6 +55,12 @@ function initializeControls() {
     updateLayers();
   });
 
+  // Add new Citibike hexagon toggle 
+  document.getElementById("citibike-hexagon-toggle").addEventListener("change", (event) => {
+    showCitibikeHexagons = event.target.checked;
+    updateLayers();
+  });
+
 
   // Manual movement buttons
   document.getElementById("move-up").addEventListener("click", () => {

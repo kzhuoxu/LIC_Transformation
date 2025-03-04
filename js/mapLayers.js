@@ -104,10 +104,16 @@ async function updateLayers() {
       layers.push(createBikeRoutesLayer(bikeRoutesData));
     }
 
-    // Add Citibike stations layer if enabled
-    if (showCitibikeStations) {
-      const citibikeData = await loadCitibikeData();
-      layers.push(createCitibikeLayer(citibikeData));
+    // // Add Citibike stations layer if enabled
+    // if (showCitibikeStations) {
+    //   const citibikeData = await loadCitibikeData();
+    //   layers.push(createCitibikeLayer(citibikeData));
+    // }
+
+    // Load Citibike data if needed for any Citibike layer
+    let citibikeData = [];
+    if (showCitibikeStations || showCitibikeHexagons) {
+      citibikeData = await loadCitibikeData();
     }
 
     if (showHexagonLayer) {
@@ -142,8 +148,21 @@ async function updateLayers() {
         })
       );
     } else {
-      layers.push(createScatterplotLayer(treesData));
+      // layers.push(createScatterplotLayer(treesData));
       layers.push(createLicBidLayer(licBidData));
+    }
+
+    // Citibike hexagon layer (independent toggle)
+    if (showCitibikeHexagons && citibikeData.length > 0) {
+      layers.push(createCitibikeHexagonLayer(citibikeData));
+    }
+
+    // Citibike stations layer (independent toggle)
+    if (showCitibikeStations && citibikeData.length > 0) {
+      // Only show point layer if hexagons are off or we explicitly want both
+      if (!showCitibikeHexagons) {
+        layers.push(createCitibikeLayer(citibikeData));
+      }
     }
 
     layers.push(createQRPositionLayer());
@@ -369,5 +388,58 @@ function updateCitibikeTooltip(info) {
       Capacity: ${capacity || 'N/A'}<br>
       Location: [${lat.toFixed(5)}, ${lon.toFixed(5)}]
     `;
+  }
+}
+
+// Add this function to create a hexagon layer for Citibike station capacities
+function createCitibikeHexagonLayer(citibikeData) {
+  return new HexagonLayer({
+    id: 'citibike-hexagon-layer',
+    data: citibikeData,
+    getPosition: d => [d.lon, d.lat],
+    getElevationWeight: d => d.capacity || 0,
+    getColorWeight: d => d.capacity || 0,
+    radius: 50,
+    elevationScale: 1,
+    extruded: true,
+    pickable: true,
+    colorRange: [
+      [0, 64, 128],
+      [0, 96, 176],
+      [0, 128, 214],
+      [0, 160, 235],
+      [41, 190, 240],
+      [103, 216, 245]
+    ],  // Citibike blue color gradient
+    elevationRange: [0, 500],
+    coverage: 0.85,
+    opacity: 0.8,
+    onHover: info => {
+      if (info.object) {
+        updateCitibikeHexagonTooltip(info);
+      }
+    }
+  });
+}
+
+// Add tooltip function for Citibike hexagons
+function updateCitibikeHexagonTooltip(info) {
+  const tooltip = document.getElementById("tooltip");
+  if (info.object) {
+    const count = info.object.points.length;
+    const totalCapacity = info.object.points.reduce((sum, p) => sum + (p.source.capacity || 0), 0);
+    const avgCapacity = count > 0 ? Math.round(totalCapacity / count) : 0;
+
+    tooltip.style.display = "block";
+    tooltip.style.left = `${info.x}px`;
+    tooltip.style.top = `${info.y}px`;
+    tooltip.innerHTML = `
+      <strong>Citibike Station Cluster</strong><br>
+      Stations: ${count}<br>
+      Total Capacity: ${totalCapacity}<br>
+      Avg. Capacity: ${avgCapacity}<br>
+    `;
+  } else {
+    tooltip.style.display = "none";
   }
 }
