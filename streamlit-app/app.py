@@ -6,6 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from PIL import Image
 import matplotlib.patches as mpatches
+import os
 
 # Set page configuration
 st.set_page_config(
@@ -38,7 +39,7 @@ st.markdown("""
 
 # Header
 st.title("Urban Interventions Interactive Tool")
-st.markdown("Explore the impacts and trade-offs of different urban design strategies")
+st.markdown("Explore the impacts and trade-offs of different intervention strategies")
 st.markdown("---")
 
 # Define the intervention data
@@ -264,122 +265,104 @@ with right_col:
         # Create tabs for different views
         tab1, tab2, tab3, tab4 = st.tabs(["Before/After", "Map view", "Impact Analysis", "Trade-offs"])
         
-
-
         with tab1:
             st.subheader("Before/After Comparison")
             
-            # Create a simple before/after visualization
+            # Create columns for before/after images
             col1, col2 = st.columns(2)
             
             with col1:
                 st.subheader("Current State")
-                # Create a simple "before" visualization
-                fig_before, ax_before = plt.subplots(figsize=(6, 4))
-                ax_before.set_xlim(0, 10)
-                ax_before.set_ylim(0, 6)
                 
-            
-            with col2:
-                st.subheader(f"Transformed ({implementation_level}% Implementation)")
-                # Create a simple "after" visualization - we'll reuse code from above but with interventions applied
-                fig_after, ax_after = plt.subplots(figsize=(6, 4))
-                ax_after.set_xlim(0, 10)
-                ax_after.set_ylim(0, 6)
-                
-                # Draw streets
-                for i in range(1, 10):
-                    ax_after.plot([0, 10], [i, i], 'gray', alpha=0.4)
-                    ax_after.plot([i, i], [0, 6], 'gray', alpha=0.4)
-                
-                # Add intervention elements based on selected intervention and implementation level
+                # Display appropriate "before" image based on selected intervention
                 if selected_intervention == "Mobility Management":
-                    # Scaled based on implementation level
-                    bike_lane_count = int((params_values["bike_lane_coverage"] / 100) * 9 * (implementation_level / 100))
-                    bike_parking_count = int(params_values["bike_parking_spots"] * (implementation_level / 100))
-                    bike_share_count = int(params_values["bike_share_stations"] * (implementation_level / 100))
-                    
-                    # Add bike lanes
-                    for i in range(1, bike_lane_count + 1):
-                        ax_after.plot([0, 10], [i, i], 'blue', linewidth=2, alpha=0.6)
-                    
-                    # Add bike parking
-                    for _ in range(min(bike_parking_count, 20)):
-                        x = np.random.uniform(0.5, 9.5)
-                        y = np.random.uniform(0.5, 5.5)
-                        ax_after.scatter(x, y, color='blue', marker='s', s=30)
-                    
-                    # Add bike share stations
-                    for _ in range(bike_share_count):
-                        x = np.random.uniform(0.5, 9.5)
-                        y = np.random.uniform(0.5, 5.5)
-                        ax_after.scatter(x, y, color='green', marker='o', s=80)
+                    try:
+                        st.image("./assets/f1-before.jpg", caption="Current State", use_column_width=True)
+                    except:
+                        st.error("Image file not found: f1-before.jpg")
+                        st.info("Current street layout without bike infrastructure")
                 
                 elif selected_intervention == "Public Seating Management":
-                    # Scaled based on implementation level
-                    bench_count = int(params_values["bench_count"] * (implementation_level / 100))
-                    plaza_count = int(params_values["plaza_count"] * (implementation_level / 100))
-                    shade_count = int(params_values["shade_structures"] * (implementation_level / 100))
-                    
-                    # Add benches
-                    for _ in range(bench_count):
-                        x = np.random.uniform(0.5, 9.5)
-                        y = np.random.uniform(0.5, 5.5)
-                        ax_after.scatter(x, y, color='brown', marker='|', s=60)
-                    
-                    # Add plazas
-                    for _ in range(plaza_count):
-                        x = np.random.uniform(1, 8.5)
-                        y = np.random.uniform(1, 4.5)
-                        circle = plt.Circle((x, y), 0.5, color='orange', alpha=0.3)
-                        ax_after.add_patch(circle)
-                    
-                    # Add shade structures
-                    for _ in range(shade_count):
-                        x = np.random.uniform(0.5, 9.5)
-                        y = np.random.uniform(0.5, 5.5)
-                        ax_after.scatter(x, y, color='green', marker='^', s=40)
+                    bench_count = params_values.get("bench_count", 0)
+                    if bench_count ==0:
+                        try:
+                            st.image("./assets/f3-before.png", caption="Current State", use_column_width=True)
+                        except:
+                            st.error("Image file not found: f2-before")
+                            st.info("Current street without public seating")
+                    elif bench_count <= 2:
+                        st.image("./assets/f3-before.png", caption="Current State", use_column_width=True)
+                        st.info("Street with minimal or no public seating")
+                    elif bench_count <= 10:
+                        st.image("./assets/f2-before.png", caption="Current State", use_column_width=True)
+                        st.info("Street with minimal or no public seating")
+                    else:
+                        st.image("./assets/f2-before.png", caption="Current State", use_column_width=True)
+                        st.info("Street with minimal or no public seating")               
                 
-                else:  # Curbside Management
-                    # Scaled based on implementation level
-                    parking_reduction = params_values["parking_reduction"] * (implementation_level / 100)
-                    loading_count = int(params_values["loading_zones"] * (implementation_level / 100))
-                    flexible_count = int(params_values["flexible_curb_spaces"] * (implementation_level / 100))
-                    
-                    # Reduce parking (show fewer parking spaces)
-                    parking_spots = int(20 * (1 - parking_reduction / 100))
-                    for _ in range(parking_spots):
-                        x = np.random.uniform(0.5, 9.5)
-                        y = np.random.uniform(0.5, 5.5)
-                        rect = plt.Rectangle((x, y), 0.3, 0.2, color='gray')
-                        ax_after.add_patch(rect)
-                    
-                    # Add loading zones
-                    for _ in range(loading_count):
-                        x = np.random.uniform(0.5, 9.5)
-                        y = np.random.uniform(0.5, 5.5)
-                        rect = plt.Rectangle((x, y), 0.4, 0.3, color='yellow')
-                        ax_after.add_patch(rect)
-                    
-                    # Add flexible curb spaces
-                    for _ in range(flexible_count):
-                        x = np.random.uniform(0.5, 9.5)
-                        y = np.random.uniform(0.5, 5.5)
-                        rect = plt.Rectangle((x, y), 0.3, 0.2, color='purple', alpha=0.7)
-                        ax_after.add_patch(rect)
+                elif selected_intervention == "Curbside Management":
+                    try:
+                        st.image("f3-before", caption="Current State", use_column_width=True)
+                    except:
+                        st.error("Image file not found: f3-before")
+                        st.info("Current street with standard parking arrangement")
+            
+            with col2:
+                # st.subheader(f"Transformed ({implementation_level}% Implementation)")
+                st.subheader(f"Transformation")
                 
-                ax_after.set_title(f"Transformed State")
-                ax_after.grid(True, alpha=0.3)
-                ax_after.set_xticks([])
-                ax_after.set_yticks([])
+                # Display appropriate "after" image based on selected intervention and parameters
+                if selected_intervention == "Mobility Management":
+                    try:
+                        st.image("./assets/f1-after-bikelane.png", caption="Transformed State with Bike Lanes", use_column_width=True)
+                    except:
+                        st.error("Image file not found: f1-after-bikelane")
+                        st.info("Enhanced street with dedicated bike lanes")
                 
-                st.pyplot(fig_after)
-
+                elif selected_intervention == "Public Seating Management":
+                    # Choose appropriate image based on bench count parameter
+                    bench_count = params_values.get("bench_count", 0)
+                    
+                    if bench_count == 0:
+                        try:
+                            # For minimal seating (0-2 benches)
+                            st.image("./assets/f3-before.png", caption="No Seating Added", use_column_width=True)
+                        except:
+                            st.error("Image file not found: f2-before")
+                            st.info("Street with minimal or no public seating")
+                    elif bench_count <= 2:
+                        try:
+                            # For minimal seating (0-2 benches)
+                            st.image("./assets/f3-after-bench.png", caption="Minimal Seating Added", use_column_width=True)
+                        except:
+                            st.error("Image file not found: f2-before")
+                            st.info("Street with minimal or no public seating")
+                    elif bench_count <= 10:
+                        try:
+                            # For moderate seating (6-10 benches)
+                            st.image("./assets/f2-after-table.png", caption="Moderate Seating Added", use_column_width=True)
+                        except:
+                            st.error("Image file not found: f2-after-table.png")
+                            st.info("Street with significant public seating")
+                    else:
+                        try:
+                            # For extensive seating (>10 benches)
+                            st.image("./assets/f2-after-table2.png", caption="Extensive Seating Added", use_column_width=True)
+                        except:
+                            st.error("Image file not found: f2-after-table2.png")
+                            st.info("Street with extensive public seating areas")
+                
+                elif selected_intervention == "Curbside Management":
+                    try:
+                        st.image("f3-after-bench.png", caption="Transformed Curbside Space", use_column_width=True)
+                    except:
+                        st.error("Image file not found: f3-after-bench.png")
+                        st.info("Street with flexible curbside management implemented")
 
         with tab2:
             # Display a mock map image
             st.subheader("District Map with Intervention")
-            st.info(f"Implementation Level: {implementation_level}%")
+            # st.info(f"Implementation Level: {implementation_level}%")
             
             
         with tab3:
