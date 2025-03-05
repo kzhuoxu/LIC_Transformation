@@ -1,6 +1,6 @@
 /* 
  * Configuration Settings
- * Contains all global configuration settings and state variables
+ * Contains global configuration settings and state variables
  */
 
 // Initial map view centered on Long Island City
@@ -12,11 +12,12 @@ const INITIAL_VIEW_STATE = {
   bearing: 0,
 };
 
+
 // Layer visibility settings
 let showHexagonLayer = true;
 let showBenches = true;
-let showPlazas = true;
-let showParks = true;
+let showPlazas = true; // Keep plazas visible for visualization
+let showParks = true;  // Keep parks visible for visualization
 let showBID = true;
 
 // Hexagon layer configuration
@@ -28,23 +29,17 @@ let editorMode = false;
 let selectedFacility = null;
 let facilityToAdd = {
   type: 'bench',
-  area: 100,  // in square meters (for parks/plazas)
-  density: 10, // square meters per person (for calculating seating capacity)
+  position: [-73.9413184, 40.7508189],  // Default position (center of map)
+  seatingCapacity: 3  // Default bench seating capacity
 };
 
 // Colors for different facility types
 const FACILITY_COLORS = {
-  bench: [0, 128, 255],  // Blue
-  plaza: [255, 153, 0],  // Orange
-  park: [0, 204, 102],   // Green
+  bench: [0, 128, 255],       // Blue
+  plaza: [255, 165, 0],       // Orange
+  park:  [34, 139, 34]        // Forest Green
 };
 
-// Default seating capacities
-const DEFAULT_CAPACITIES = {
-  bench: 3,
-  plaza: function(area) { return Math.max(Math.floor(area / facilityToAdd.density), 10); },
-  park: function(area) { return Math.max(Math.floor(area / facilityToAdd.density), 5); }
-};
 
 // Storage for user-added facilities
 let userAddedFacilities = [];
@@ -54,6 +49,4 @@ let facilitiesData = [];
 let bidData = null;
 
 // Legend configuration
-const legendItems = [
-  // Will be populated dynamically from data
-];
+const legendItems = [];

@@ -1,52 +1,53 @@
 /* 
  * Main Application Module
- * Initializes all components and starts the application
+ * Initializes components and starts the application
  */
 
 async function initializeApplication() {
-  // Initialize the deck.gl map and load data
   await initializeDeckGL();
-  
-  // Initialize UI controls
   initializeControls();
-  
-  // Initially populate the facilities list (empty at first)
-  updateFacilitiesList();
-  
+  // updateFacilitiesList();
   console.log('LIC Seating Map initialized successfully!');
-
   loadFacilitiesData();
   loadBIDData();
+  setupEditorMode();
 }
 
 // Start the application when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApplication);
 
-// Add this to your app.js or mapLayers.js
-async function debugFacilitiesData() {
-  try {
-    const response = await fetch("data/combined_facilities.json");
-    const data = await response.json();
-    console.log("Facilities data loaded:", data);
-    console.log("Number of facilities:", data.features ? data.features.length : 0);
-
-    // Force layer ordering so that facility and BID layers are drawn on top
-    // (Adjust variable names as defined in your mapLayers.js)
-    deckgl.setProps({
-      layers: [
-        hexagonLayer,   // Base hexagon layer (if any)
-        benchLayer,     // Benches layer
-        plazaLayer,     // Plazas layer
-        parkLayer,      // Parks layer
-        bidLayer        // LIC BID boundary layer on top
-      ]
-    });
-
-    return data;
-  } catch (error) {
-    console.error("Error loading facilities data:", error);
-  }
+// Function to enable editor mode setup
+function setupEditorMode() {
+  document.getElementById('editor-toggle').addEventListener('change', (event) => {
+    editorMode = event.target.checked;
+    if (editorMode) {
+      facilityToAdd.position = [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude]; // Default to map center
+      console.log("Editor Mode Enabled. Facility Position:", facilityToAdd.position);
+      addMovementControls(); // Add the movement controls when editor mode is enabled
+    }
+    updateLayers();
+  });
 }
 
-// Call this function after your page loads
-debugFacilitiesData();
+// Function to move facility in editor mode
+function moveFacility(direction) {
+  if (!editorMode || !facilityToAdd || !facilityToAdd.position) return;
+  const step = 0.0005; // Adjust movement step size
+  
+  switch (direction) {
+    case 'up':
+      facilityToAdd.position[1] += step;
+      break;
+    case 'down':
+      facilityToAdd.position[1] -= step;
+      break;
+    case 'left':
+      facilityToAdd.position[0] -= step;
+      break;
+    case 'right':
+      facilityToAdd.position[0] += step;
+      break;
+  }
+  console.log("Facility moved:", facilityToAdd.position);
+  updateLayers();
+}

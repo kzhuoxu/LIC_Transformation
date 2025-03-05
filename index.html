@@ -73,39 +73,26 @@
       
       <div id="editor-controls" style="display: none;">
         <div class="control-group">
-          <label>Facility Type:</label>
-          <select id="facility-type">
-            <option value="bench">Bench (3 seats)</option>
-            <option value="plaza">Plaza</option>
-            <option value="park">Park</option>
+          <label>Bench Numbers</label>
+          <select id="bench-capacity">
+            <option value="3">1 benches</option>
+            <option value="6" selected>2 benches</option>
+            <option value="15">5 benches </option>
           </select>
         </div>
         
-        <div id="area-controls" style="display: none;">
-          <div class="slider-container">
-            <label for="area-slider">Area (sq meters): <span id="area-value">100</span></label>
-            <input type="range" id="area-slider" min="50" max="5000" step="50" value="100" />
-          </div>
-          
-          <div class="slider-container">
-            <label for="density-slider">Seating Density (sq m/person): <span id="density-value">10</span></label>
-            <input type="range" id="density-slider" min="5" max="30" step="1" value="10" />
-          </div>
-        </div>
+
         
-        <div class="editor-buttons">
-          <button id="add-facility">Add Facility</button>
-          <button id="delete-facility" disabled>Delete Selected</button>
-        </div>
+        <!-- Movement controls will be added dynamically in JavaScript -->
       </div>
     </div>
     
-    <div class="control-section">
+    <!-- <div class="control-section">
       <h3>Added Facilities</h3>
       <div id="added-facilities-list" class="facilities-list">
         <p class="empty-list-message">No facilities added yet.</p>
       </div>
-    </div>
+    </div> -->
     
     <div class="legend-section">
       <h3>Legend</h3>

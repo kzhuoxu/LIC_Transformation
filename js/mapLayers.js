@@ -1,6 +1,6 @@
-/* 
+/*
  * Map Layers Module
- * Handles the deck.gl layers and map initialization
+ * Handles deck.gl layers and map initialization
  */
 
 const {
@@ -8,9 +8,11 @@ const {
   HexagonLayer,
   ScatterplotLayer,
   GeoJsonLayer,
+  LineLayer,
   PolygonLayer,
   MapboxOverlay,
 } = deck;
+
 
 // Load facility data from JSON file
 async function loadFacilitiesData() {
@@ -18,10 +20,10 @@ async function loadFacilitiesData() {
     const response = await fetch("data/combined_facilities.json");
     const data = await response.json();
     facilitiesData = data.features;
-    
+
     // Populate legend items
     populateLegend(facilitiesData);
-    
+
     return facilitiesData;
   } catch (error) {
     console.error("Error loading facilities data:", error);
@@ -29,36 +31,98 @@ async function loadFacilitiesData() {
   }
 }
 
+// Update the list of facilities in the UI
 function updateLayers() {
   if (!window.deckOverlay) return;
-  
+
   const layers = [];
-  
-  // Add base layers first
+
+  // Include all layers for visualization
   if (showBID) {
     layers.push(createBIDLayer());
   }
-  
+
   // Add facility layers next
   if (showParks) {
     layers.push(createParkLayer());
   }
-  
+
   if (showPlazas) {
     layers.push(createPlazaLayer());
   }
-  
+
   if (showBenches) {
     layers.push(createBenchLayer());
   }
-  
-  // Add hexagon layer on top of facilities
-  if (showHexagonLayer) {
-    layers.push(createHexagonLayer());
+  // Add the line layer for the bench being placed in editor mode
+  if (editorMode && facilityToAdd && facilityToAdd.position) {
+    layers.push(
+      new LineLayer({
+        id: "facility-line-layer",
+        data: [
+          {
+            sourcePosition: facilityToAdd.position,
+            targetPosition: [
+              facilityToAdd.position[0],
+              facilityToAdd.position[1] + 0.005,
+              0,
+            ],
+          },
+        ],
+        getSourcePosition: (d) => d.sourcePosition,
+        getTargetPosition: (d) => d.targetPosition,
+        getColor: [0, 255, 0], // Green line indicator
+        getWidth: 10,
+        opacity: 1.0,
+      })
+    );
+
+    // Add a temporary bench at the current position for the hexagon layer to use
+    const tempBench = {
+      position: facilityToAdd.position,
+      weight: facilityToAdd.seatingCapacity,
+    };
+
+    // Always show hexagon layer in editor mode to visualize the impact
+    if (showHexagonLayer) {
+      layers.push(createHexagonLayer([tempBench]));
+    }
   }
-  
-  // Update the overlay with all layers
+  if (showHexagonLayer) {
+    layers.push(createHexagonLayer([]));
+  }
+
   window.deckOverlay.setProps({ layers });
+}
+
+// Add movement controls dynamically when editor mode is enabled
+function addMovementControls() {
+  const editorControls = document.getElementById("editor-controls");
+  if (!document.getElementById("move-up")) {
+    // Prevent duplicate buttons
+    const movementButtons = `
+      <div class="movement-controls">
+        <button id="move-up">⬆️ Up</button>
+        <button id="move-left">⬅️ Left</button>
+        <button id="move-right">➡️ Right</button>
+        <button id="move-down">⬇️ Down</button>
+      </div>
+    `;
+    editorControls.insertAdjacentHTML("beforeend", movementButtons);
+
+    document
+      .getElementById("move-up")
+      .addEventListener("click", () => moveFacility("up"));
+    document
+      .getElementById("move-down")
+      .addEventListener("click", () => moveFacility("down"));
+    document
+      .getElementById("move-left")
+      .addEventListener("click", () => moveFacility("left"));
+    document
+      .getElementById("move-right")
+      .addEventListener("click", () => moveFacility("right"));
+  }
 }
 
 // Load BID boundary data from JSON file
@@ -76,21 +140,22 @@ async function loadBIDData() {
 
 // Extract unique categories for legend
 function populateLegend(features) {
+  console.log("Populating legend with", features.length, "features");
   // Clear existing items
   legendItems.length = 0;
-  
+
   // Categories by facility type
   const categories = {
     bench: new Map(),
     plaza: new Map(),
     park: new Map()
   };
-  
+
   // Extract unique categories and their colors
   features.forEach(feature => {
     const type = feature.properties.type;
     let category, color;
-    
+
     if (type === 'bench') {
       category = feature.properties.Category || 'Other';
       color = feature.properties.color;
@@ -101,19 +166,19 @@ function populateLegend(features) {
       category = feature.properties.TYPECATEGORY || 'Other';
       color = feature.properties.color;
     }
-    
+
     if (category && color && categories[type]) {
       // Convert decimal color to hex
       const hexColor = `#${color.toString(16).padStart(6, '0')}`;
       categories[type].set(category, hexColor);
     }
   });
-  
+
   // Add default colors for user-added facilities
   categories.bench.set('User Added', rgbToHex(...FACILITY_COLORS.bench));
   categories.plaza.set('User Added', rgbToHex(...FACILITY_COLORS.plaza));
   categories.park.set('User Added', rgbToHex(...FACILITY_COLORS.park));
-  
+
   // Convert to legend items
   for (const [type, typeCategories] of Object.entries(categories)) {
     for (const [category, color] of typeCategories.entries()) {
@@ -124,7 +189,7 @@ function populateLegend(features) {
       });
     }
   }
-  
+
   // Update legend in UI
   updateLegendDisplay();
 }
@@ -136,22 +201,24 @@ function rgbToHex(r, g, b) {
 
 // Update the legend display in the UI
 function updateLegendDisplay() {
+  console.log("Updating legend display");
   const legendContainer = document.getElementById('legend-container');
+  console.log("Legend container:", legendContainer);
   legendContainer.innerHTML = '';
-  
+
   // Group by facility type
   const groupedLegend = {
     bench: [],
     plaza: [],
     park: []
   };
-  
+
   legendItems.forEach(item => {
     if (groupedLegend[item.type]) {
       groupedLegend[item.type].push(item);
     }
   });
-  
+
   // Create legend sections by type
   for (const [type, items] of Object.entries(groupedLegend)) {
     if (items.length > 0) {
@@ -159,32 +226,32 @@ function updateLegendDisplay() {
       typeTitle.className = 'legend-type-title';
       typeTitle.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)}es`;
       legendContainer.appendChild(typeTitle);
-      
+
       items.forEach(item => {
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
-        
+
         const colorBox = document.createElement('div');
         colorBox.className = 'legend-color';
         colorBox.style.backgroundColor = item.color;
-        
+
         const label = document.createElement('span');
         label.textContent = item.category;
-        
+
         legendItem.appendChild(colorBox);
         legendItem.appendChild(label);
         legendContainer.appendChild(legendItem);
       });
     }
   }
-  
+
   // Add special hexagon layer legend if it's visible
   if (showHexagonLayer) {
     const hexTitle = document.createElement('div');
     hexTitle.className = 'legend-type-title';
     hexTitle.textContent = 'Seating Capacity';
     legendContainer.appendChild(hexTitle);
-    
+
     // Create a gradient for the hexagon elevation
     const gradientContainer = document.createElement('div');
     gradientContainer.className = 'legend-gradient';
@@ -192,47 +259,65 @@ function updateLegendDisplay() {
     gradientContainer.style.height = '15px';
     gradientContainer.style.marginBottom = '5px';
     gradientContainer.style.borderRadius = '2px';
-    
+
     // Add labels for low and high
     const labelsContainer = document.createElement('div');
     labelsContainer.className = 'legend-labels';
     labelsContainer.style.display = 'flex';
     labelsContainer.style.justifyContent = 'space-between';
     labelsContainer.style.fontSize = '11px';
-    
+
     const lowLabel = document.createElement('span');
     lowLabel.textContent = 'Low';
-    
+
     const highLabel = document.createElement('span');
     highLabel.textContent = 'High';
-    
+
     labelsContainer.appendChild(lowLabel);
     labelsContainer.appendChild(highLabel);
-    
+
     legendContainer.appendChild(gradientContainer);
     legendContainer.appendChild(labelsContainer);
   }
+  console.log("Legend container content:", legendContainer.innerHTML);
 }
 
 // Create a hexagon layer for seating capacity visualization
-function createHexagonLayer() {
-  // Combine original and user-added facilities
-  const allFacilities = [
-    ...facilitiesData.map(feature => ({
-      position: getPosition(feature),
+function createHexagonLayer(additionalData = []) {
+  // Convert all facility types to points with position and weight
+  const facilitiesPoints = facilitiesData.map((feature) => {
+    let position;
+    if (feature.geometry.type === "Point") {
+      position = feature.geometry.coordinates;
+    } else if (feature.geometry.type === "MultiPolygon") {
+      // Use the first coordinate of the first polygon as an approximation
+      position = feature.geometry.coordinates[0][0][0];
+    } else if (feature.geometry.type === "Polygon") {
+      // Use the first coordinate of the polygon as an approximation
+      position = feature.geometry.coordinates[0][0];
+    }
+
+    return {
+      position: position,
       weight: feature.properties.SeatingCapacity || 0,
-    })),
-    ...userAddedFacilities.map(facility => ({
+    };
+  });
+
+  // Combine all data sources
+  const allFacilities = [
+    ...facilitiesPoints,
+    ...userAddedFacilities.map((facility) => ({
       position: facility.geometry.coordinates,
       weight: facility.properties.SeatingCapacity || 0,
-    }))
+    })),
+    ...additionalData, // Include any temporary data points (like the moving bench)
   ];
-  
+
   return new HexagonLayer({
-    id: 'hexagon-layer',
+    id: "hexagon-layer",
     data: allFacilities,
-    getPosition: d => d.position,
-    getElevationWeight: d => d.weight,
+    getPosition: (d) => d.position,
+    getElevationWeight: (d) => d.weight,
     elevationScale: hexagonElevationScale,
     extruded: true,
     radius: hexagonRadius,
@@ -247,66 +332,34 @@ function createHexagonLayer() {
       [216, 254, 181],
       [254, 237, 177],
       [254, 173, 84],
-      [209, 55, 78]
+      [209, 55, 78],
     ],
     updateTriggers: {
-      getElevationWeight: [userAddedFacilities, hexagonRadius]
-    }
+      getElevationWeight: [userAddedFacilities, hexagonRadius, additionalData],
+    },
   });
-}
-
-// Get the position from a feature (handles different geometry types)
-function getPosition(feature) {
-  if (!feature || !feature.geometry) return [0, 0];
-  
-  if (feature.geometry.type === 'Point') {
-    return feature.geometry.coordinates;
-  } else if (feature.geometry.type === 'Polygon') {
-    // Calculate centroid of the polygon
-    const coordinates = feature.geometry.coordinates[0];
-    const sumX = coordinates.reduce((sum, coord) => sum + coord[0], 0);
-    const sumY = coordinates.reduce((sum, coord) => sum + coord[1], 0);
-    return [sumX / coordinates.length, sumY / coordinates.length];
-  } else if (feature.geometry.type === 'MultiPolygon') {
-    // Calculate centroid of the first polygon
-    const coordinates = feature.geometry.coordinates[0][0];
-    const sumX = coordinates.reduce((sum, coord) => sum + coord[0], 0);
-    const sumY = coordinates.reduce((sum, coord) => sum + coord[1], 0);
-    return [sumX / coordinates.length, sumY / coordinates.length];
-  }
-  
-  return [0, 0];
 }
 
 // Create scatter plot layer for benches
 function createBenchLayer() {
   // Filter facilities data for benches
-  const benchData = facilitiesData.filter(feature => 
-    feature.properties.type === 'bench'
+  const benchData = facilitiesData.filter(
+    (feature) => feature.properties.type === "bench"
   );
-  
-  // Get user-added benches
-  const userBenches = userAddedFacilities.filter(facility => 
-    facility.properties.type === 'bench'
-  );
-  
+
   return new ScatterplotLayer({
-    id: 'bench-layer',
-    data: [...benchData, ...userBenches],
-    getPosition: feature => feature.geometry.coordinates,
+    id: "bench-layer",
+    data: [...benchData, ...userAddedFacilities],
+    getPosition: (feature) => feature.geometry.coordinates,
     getRadius: 5,
-    radiusUnits: 'pixels',
-    getFillColor: feature => {
+    radiusUnits: "pixels",
+    getFillColor: (feature) => {
       if (feature.properties.userAdded) {
         return FACILITY_COLORS.bench;
       }
       // Convert decimal color to RGB array
       const color = feature.properties.color;
-      return [
-        (color >> 16) & 0xFF,
-        (color >> 8) & 0xFF,
-        color & 0xFF
-      ];
+      return [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff];
     },
     getLineColor: [0, 0, 0],
     lineWidthMinPixels: 1,
@@ -314,41 +367,36 @@ function createBenchLayer() {
     onHover: updateFacilityTooltip,
     onClick: handleFacilityClick,
     updateTriggers: {
-      getFillColor: [userAddedFacilities]
-    }
+      getFillColor: [userAddedFacilities],
+    },
   });
 }
 
 // Create GeoJSON layer for plazas
 function createPlazaLayer() {
   // Filter facilities data for plazas
-  const plazaData = facilitiesData.filter(feature => 
-    feature.properties.type === 'plaza'
+  const plazaData = facilitiesData.filter(
+    (feature) => feature.properties.type === "plaza"
   );
-  
+
   // Get user-added plazas
-  const userPlazas = userAddedFacilities.filter(facility => 
-    facility.properties.type === 'plaza'
+  const userPlazas = userAddedFacilities.filter(
+    (facility) => facility.properties.type === "plaza"
   );
-  
+
   return new GeoJsonLayer({
-    id: 'plaza-layer',
+    id: "plaza-layer",
     data: [...plazaData, ...userPlazas],
     pickable: true,
     stroked: true,
     filled: true,
-    getFillColor: feature => {
+    getFillColor: (feature) => {
       if (feature.properties.userAdded) {
         return [...FACILITY_COLORS.plaza, 180]; // Add alpha
       }
       // Convert decimal color to RGB array with alpha
       const color = feature.properties.color;
-      return [
-        (color >> 16) & 0xFF,
-        (color >> 8) & 0xFF,
-        color & 0xFF,
-        180
-      ];
+      return [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff, 180];
     },
     getLineColor: [0, 0, 0, 255],
     getLineWidth: 1,
@@ -356,41 +404,36 @@ function createPlazaLayer() {
     onHover: updateFacilityTooltip,
     onClick: handleFacilityClick,
     updateTriggers: {
-      getFillColor: [userAddedFacilities]
-    }
+      getFillColor: [userAddedFacilities],
+    },
   });
 }
 
 // Create GeoJSON layer for parks
 function createParkLayer() {
   // Filter facilities data for parks
-  const parkData = facilitiesData.filter(feature => 
-    feature.properties.type === 'park'
+  const parkData = facilitiesData.filter(
+    (feature) => feature.properties.type === "park"
   );
-  
+
   // Get user-added parks
-  const userParks = userAddedFacilities.filter(facility => 
-    facility.properties.type === 'park'
+  const userParks = userAddedFacilities.filter(
+    (facility) => facility.properties.type === "park"
   );
-  
+
   return new GeoJsonLayer({
-    id: 'park-layer',
+    id: "park-layer",
     data: [...parkData, ...userParks],
     pickable: true,
     stroked: true,
     filled: true,
-    getFillColor: feature => {
+    getFillColor: (feature) => {
       if (feature.properties.userAdded) {
         return [...FACILITY_COLORS.park, 180]; // Add alpha
       }
       // Convert decimal color to RGB array with alpha
       const color = feature.properties.color;
-      return [
-        (color >> 16) & 0xFF,
-        (color >> 8) & 0xFF,
-        color & 0xFF,
-        180
-      ];
+      return [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff, 180];
     },
     getLineColor: [0, 0, 0, 255],
     getLineWidth: 1,
@@ -398,71 +441,75 @@ function createParkLayer() {
     onHover: updateFacilityTooltip,
     onClick: handleFacilityClick,
     updateTriggers: {
-      getFillColor: [userAddedFacilities]
-    }
+      getFillColor: [userAddedFacilities],
+    },
   });
 }
 
 // Create GeoJSON layer for BID boundary
 function createBIDLayer() {
   return new GeoJsonLayer({
-    id: 'bid-layer',
+    id: "bid-layer",
     data: bidData,
     pickable: false,
     stroked: true,
     filled: false,
     getLineColor: [100, 100, 100, 255],
     getLineWidth: 2,
-    lineWidthMinPixels: 2
+    lineWidthMinPixels: 2,
   });
 }
 
 // Update the tooltip for hexagon layer
 function updateHexagonTooltip({ x, y, object }) {
-  const tooltip = document.getElementById('tooltip');
-  
+  const tooltip = document.getElementById("tooltip");
+
   if (object) {
     // Get all facilities in this hexagon
     const points = object.points || [];
     if (points.length === 0) {
-      tooltip.style.display = 'none';
+      tooltip.style.display = "none";
       return;
     }
-    
+
     const totalSeating = points.reduce((sum, p) => sum + p.weight, 0);
-    
+
     // Count facilities by type
     const facilityCount = {
       bench: 0,
       plaza: 0,
-      park: 0
+      park: 0,
     };
-    
-    points.forEach(p => {
-      const feature = facilitiesData.find(f => {
+
+    points.forEach((p) => {
+      const feature = facilitiesData.find((f) => {
         const fPos = getPosition(f);
-        return fPos[0] === p.source.position[0] && fPos[1] === p.source.position[1];
+        return (
+          fPos[0] === p.source.position[0] && fPos[1] === p.source.position[1]
+        );
       });
-      
+
       if (feature && feature.properties.type) {
         facilityCount[feature.properties.type]++;
       } else {
         // Check user-added facilities
-        const userFeature = userAddedFacilities.find(f => {
-          return f.geometry.coordinates[0] === p.source.position[0] && 
-                 f.geometry.coordinates[1] === p.source.position[1];
+        const userFeature = userAddedFacilities.find((f) => {
+          return (
+            f.geometry.coordinates[0] === p.source.position[0] &&
+            f.geometry.coordinates[1] === p.source.position[1]
+          );
         });
-        
+
         if (userFeature && userFeature.properties.type) {
           facilityCount[userFeature.properties.type]++;
         }
       }
     });
-    
+
     // Create tooltip content
     let content = `<strong>Total Seating Capacity: ${totalSeating}</strong><br>`;
     content += `<strong>Facilities in this area:</strong><br>`;
-    
+
     if (facilityCount.bench > 0) {
       content += `Benches: ${facilityCount.bench}<br>`;
     }
@@ -472,77 +519,81 @@ function updateHexagonTooltip({ x, y, object }) {
     if (facilityCount.park > 0) {
       content += `Parks: ${facilityCount.park}<br>`;
     }
-    
+
     tooltip.innerHTML = content;
     tooltip.style.left = `${x}px`;
     tooltip.style.top = `${y}px`;
-    tooltip.style.display = 'block';
+    tooltip.style.display = "block";
   } else {
-    tooltip.style.display = 'none';
+    tooltip.style.display = "none";
   }
 }
 
 // Update the tooltip for facility layers
 function updateFacilityTooltip({ x, y, object }) {
-  const tooltip = document.getElementById('tooltip');
-  
+  const tooltip = document.getElementById("tooltip");
+
   if (object) {
     const properties = object.properties || {};
     const type = properties.type;
-    let content = '';
-    
-    if (type === 'bench') {
+    let content = "";
+
+    if (type === "bench") {
       content = `
         <strong>Bench</strong><br>
-        Category: ${properties.Category || 'N/A'}<br>
+        Category: ${properties.Category || "N/A"}<br>
         Seating Capacity: ${properties.SeatingCapacity || 3}<br>
-        ${properties.BenchType ? `Type: ${properties.BenchType}<br>` : ''}
-        ${properties.userAdded ? '<em>User Added</em>' : ''}
+        ${properties.BenchType ? `Type: ${properties.BenchType}<br>` : ""}
+        ${properties.userAdded ? "<em>User Added</em>" : ""}
       `;
-    } else if (type === 'plaza') {
+    } else if (type === "plaza") {
       content = `
         <strong>Plaza</strong><br>
-        Name: ${properties.Plaza_Name || 'User Added Plaza'}<br>
-        Partner: ${properties.Partner || 'N/A'}<br>
-        Seating Capacity: ${properties.SeatingCapacity || 'N/A'}<br>
+        Name: ${properties.Plaza_Name || "User Added Plaza"}<br>
+        Partner: ${properties.Partner || "N/A"}<br>
+        Seating Capacity: ${properties.SeatingCapacity || "N/A"}<br>
         Area: ${Math.round(properties.area || 0)} sq m<br>
-        ${properties.userAdded ? '<em>User Added</em>' : ''}
+        ${properties.userAdded ? "<em>User Added</em>" : ""}
       `;
-    } else if (type === 'park') {
+    } else if (type === "park") {
       content = `
         <strong>Park</strong><br>
-        Name: ${properties.PARK_NAME || 'User Added Park'}<br>
-        Type: ${properties.TYPECATEGORY || 'N/A'}<br>
-        Seating Capacity: ${properties.SeatingCapacity || 'N/A'}<br>
-        Area: ${properties.ACRES ? (properties.ACRES + ' acres') : (Math.round(properties.area || 0) + ' sq m')}<br>
-        ${properties.userAdded ? '<em>User Added</em>' : ''}
+        Name: ${properties.PARK_NAME || "User Added Park"}<br>
+        Type: ${properties.TYPECATEGORY || "N/A"}<br>
+        Seating Capacity: ${properties.SeatingCapacity || "N/A"}<br>
+        Area: ${
+          properties.ACRES
+            ? properties.ACRES + " acres"
+            : Math.round(properties.area || 0) + " sq m"
+        }<br>
+        ${properties.userAdded ? "<em>User Added</em>" : ""}
       `;
     }
-    
+
     tooltip.innerHTML = content;
     tooltip.style.left = `${x}px`;
     tooltip.style.top = `${y}px`;
-    tooltip.style.display = 'block';
+    tooltip.style.display = "block";
   } else {
-    tooltip.style.display = 'none';
+    tooltip.style.display = "none";
   }
 }
 
 // Handle facility click for selection in editor mode
 function handleFacilityClick({ object }) {
   if (!editorMode || !object) return;
-  
+
   // Only select user-added facilities for editing
   if (!object.properties.userAdded) return;
-  
+
   // Select this facility
   selectedFacility = object;
-  
+
   // Update the selected facility in the UI
   updateSelectedFacilityInList();
-  
+
   // Enable delete button
-  document.getElementById('delete-facility').disabled = false;
+  document.getElementById("delete-facility").disabled = false;
 }
 
 async function initializeDeckGL() {
@@ -554,18 +605,17 @@ async function initializeDeckGL() {
       pitch: INITIAL_VIEW_STATE.pitch,
       bearing: INITIAL_VIEW_STATE.bearing,
       style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-      failIfMajorPerformanceCaveat: false  // Try to render even with poor performance
+      failIfMajorPerformanceCaveat: false, // Try to render even with poor performance
     });
 
     // Initialize Deck.gl overlay with empty layers
     window.deckOverlay = new MapboxOverlay({ layers: [] });
     map.addControl(window.deckOverlay);
-    
+
     // Rest of your initialization code...
-    
   } catch (error) {
     console.error("WebGL initialization failed:", error);
-    
+
     // Display a user-friendly error message
     const mapContainer = document.getElementById("map");
     mapContainer.innerHTML = `
@@ -581,11 +631,8 @@ async function initializeDeckGL() {
         </ul>
       </div>
     `;
-    
+
     // Load data even without map, so other parts of the app can work
-    await Promise.all([
-      loadFacilitiesData(),
-      loadBIDData()
-    ]);
+    await Promise.all([loadFacilitiesData(), loadBIDData()]);
   }
 }
