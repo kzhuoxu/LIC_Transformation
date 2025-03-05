@@ -71,7 +71,7 @@ METRIC_DISPLAY_CONFIG = {
     "Public Seating Management": {
         "metrics_to_show": [
             ("Pedestrian Dwell Time (min)", "{:.1f} min", "Pedestrian Dwell Time"),
-            ("Business Foot Traffic (people/hr)", "{:,.0f}/hr", "Business Foot Traffic"),
+            # ("Business Foot Traffic (people/hr)", "{:,.0f}/hr", "Business Foot Traffic"),
             # ("Social Interactions (count/hr)", "{:.0f}/hr", "Social Interactions"),
             ("Public Space Utilization (%)", "{:.1f}%", "Public Space Utilization")
         ]

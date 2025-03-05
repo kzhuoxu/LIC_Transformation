@@ -349,4 +349,4 @@ with right_col:
 
 # Footer
 st.markdown("---")
-st.caption("Urban Interventions Interactive Tool - Created with Streamlit ")
+st.caption("Urban Interventions Interactive Tool - Created with Streamlit")
