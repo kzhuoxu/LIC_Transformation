@@ -53,7 +53,7 @@ INTERVENTIONS = {
                 "label": "Bike Share Stations Implementation Level",
                 "min": 0,
                 "max": 2,
-                "default": 0,
+                "default": 1,
                 "description": "Level of bike share stations: None, Minimal (2 stations), Extensive (6 stations)"
             }
         },
@@ -62,38 +62,7 @@ INTERVENTIONS = {
             "Weather considerations may affect year-round bike usage",
             "Initial infrastructure costs are high but maintenance costs are lower than road maintenance"
         ]
-    },
-    # "Curbside Management": {
-    #     "description": "Reduce parking, create flexible curb spaces for multiple uses",
-    #     "parameters": {
-    #         "parking_level": {
-    #             "label": "Parking Reduction",
-    #             "min": 0,
-    #             "max": 2,
-    #             "default": 0,
-    #             "description": "Level of parking reduction: None, Minimal (25%), Extensive (65%)"
-    #         },
-    #         "loading_level": {
-    #             "label": "Loading Zones",
-    #             "min": 0,
-    #             "max": 2,
-    #             "default": 0,
-    #             "description": "Level of loading zones: None, Minimal (12 zones), Extensive (25 zones)"
-    #         },
-    #         "flexible_level": {
-    #             "label": "Flexible Curb Spaces",
-    #             "min": 0,
-    #             "max": 2,
-    #             "default": 0,
-    #             "description": "Level of flexible curb spaces: None, Minimal (15 spaces), Extensive (35 spaces)"
-    #         }
-    #     },
-    #     "conflicts": [
-    #         "Reduction in parking spaces might affect businesses that rely on car-based customers",
-    #         "Enforcement of loading zone time limits requires resources",
-    #         "Clear signage is critical for flexible curb space usage"
-    #     ]
-    # }
+    }
 }
 
 
@@ -103,26 +72,17 @@ METRIC_DISPLAY_CONFIG = {
         "metrics_to_show": [
             ("Pedestrian Dwell Time (min)", "{:.1f} min", "Pedestrian Dwell Time"),
             ("Business Foot Traffic (people/hr)", "{:,.0f}/hr", "Business Foot Traffic"),
-            ("Social Interactions (count/hr)", "{:.0f}/hr", "Social Interactions"),
+            # ("Social Interactions (count/hr)", "{:.0f}/hr", "Social Interactions"),
             ("Public Space Utilization (%)", "{:.1f}%", "Public Space Utilization")
         ]
     },
     "Mobility Management": {
         "metrics_to_show": [
-            ("pedestrian_activity", "{:.1f}", "Pedestrian Activity"),
-            ("economic_activity", "{:.1f}", "Economic Activity"),
-            ("community_engagement", "{:.1f}", "Community Engagement"),
-            ("pedestrian_safety", "{:.1f}%", "Pedestrian Safety")
+            ("space_text", "{}", "Space Utilization"),
+            ("economic_text", "{}", "Economic Value"),  
+            ("community_text", "{}", "Community Engagement")
         ]
     },
-    "Curbside Management": {
-        "metrics_to_show": [
-            ("pedestrian_safety", "{:.1f}%", "Pedestrian Safety"),
-            ("traffic_flow", "{:.1f}%", "Traffic Flow"),
-            ("business_access", "{:.1f}%", "Business Access"),
-            ("community_support", "{:.1f}%", "Community Support")
-        ]
-    }
 }
 
 

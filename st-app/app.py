@@ -98,9 +98,9 @@ with left_col:
                 if selected_intervention == "Public Seating Management":
                     value = results["metrics"][metric_key]
                     delta = results["increases"][display_name]
-                else:
+                else:  # Mobility Management
                     value = results[metric_key]
-                    delta = None  # Mobility doesn't have increases in current implementation
+                    delta = None  # No deltas for mobility metrics
                 
                 st.metric(
                     display_name,
@@ -116,9 +116,9 @@ with left_col:
             if selected_intervention == "Public Seating Management":
                 value = results["metrics"][metric_key]
                 delta = results["increases"][display_name]
-            else:
+            else:  # Mobility Management
                 value = results[metric_key]
-                delta = None  # Mobility doesn't have increases in current implementation
+                delta = None  # No deltas for mobility metrics
             
             st.metric(
                 display_name,
@@ -143,7 +143,7 @@ with right_col:
             st.subheader("Current State")
             
             if selected_intervention == "Mobility Management":
-                st.image("./assets/l0.jpg", caption="Current State", use_column_width=True)
+                st.image("./assets/b0.png", caption="Current State", use_column_width=True)
             
             else:  # Public Seating Management
                 seating_level = params_values.get("seating_level", 0)
@@ -155,11 +155,21 @@ with right_col:
             
             # Display appropriate "after" image based on selected intervention and parameters
             if selected_intervention == "Mobility Management":
-                try:
-                    st.image("./assets/f1-after-bikelane.png", caption="Transformed State with Bike Lanes", use_column_width=True)
-                except:
-                    st.error("Image file not found: f1-after-bikelane.png")
-                    st.info("Enhanced street with dedicated bike lanes")
+                bike_lane_level = params_values.get("bike_lane_level", 0)
+                bike_share_level = params_values.get("bike_share_level", 0)
+
+                if bike_lane_level == 0 and bike_share_level== 0:
+                    st.image("./assets/b0.png", caption="No dedicated Bike Lanes, Minimal Bike-sharing Capacity", use_column_width=True)
+                elif bike_lane_level == 0 and bike_share_level== 1:
+                    st.image("./assets/b0.png", caption="No dedicated Bike Lanes, Minimal Bike-sharing Capacity", use_column_width=True)
+                elif bike_lane_level == 0 and bike_share_level== 1:
+                    st.image("./assets/b1.png", caption="Transformed State with dedicated Bike Lanes, Minimal Bike-sharing Capacity", use_column_width=True)
+                elif bike_lane_level == 2 and bike_share_level== 1:
+                    st.image("./assets/b2_s1.png", caption="Transformed State with dedicated Bike Lanes, Minimal Bike-sharing Capacity", use_column_width=True)
+                elif bike_lane_level == 2 and bike_share_level== 2:
+                    st.image("./assets/b2_s2.png", caption="Transformed State with dedicated Bike Lanes, Minimal Bike-sharing Capacity", use_column_width=True)
+                else:
+                    st.image("./assets/b1.png", caption="Transformed State with dedicated Bike Lanes, Minimal Bike-sharing Capacity", use_column_width=True)
             
             else:  # Public Seating Management
                 seating_level = params_values.get("seating_level", 0)
@@ -186,36 +196,79 @@ with right_col:
     
     with tab2:
         st.subheader("Trade-offs")
+        st.subheader("Conflicts & Considerations")
+
+        if selected_intervention == "Public Seating Management":
+            considerations = [
+                "Maintenance costs for public seating and plazas need to be factored into long-term budgets",
+                "Potential concerns about safety issues in seating areas",
+                "Weather protection is critical for year-round usability",
+            ]
+        else:  # Mobility Management
+            considerations = [
+                "Covert curbside parking to bike lanes might increase congestion",
+                "Weather considerations may affect year-round bike usage",
+                "Initial infrastructure costs are high but maintenance costs are lower than road maintenance",
+            ]
+        for consideration in considerations:
+            st.markdown(f"* {consideration}")
+        
+        st.subheader("Recommendations")
+
+        if selected_intervention == "Public Seating Management":
+            recommendations = [
+                "Position seating to maintain adequate walking paths",
+                "Incorporate weather protection for year-round usability",
+                "Include a variety of seating types to accommodate different user needs",
+                "Establish a maintenance plan and budget for long-term sustainability"
+            ]
+        else:  # Mobility Management
+            recommendations = [
+                "Implement protected bike lanes where possible to maximize safety benefits",
+                "Position bike share stations near transit nodes and major employment centers",
+                "Balance bike lane implementation with delivery zone preservation for businesses"
+            ]
+        
+        for recommendation in recommendations:
+            st.markdown(f"🔹 {recommendation}")
+
+        st.subheader('Combined Implementation Approach')
+        st.write('Synergies & Opportunities:')
+        st.write('Community Hubs: Placing bike share stations near plazas creates natural gathering points.')
+        st.write('Rest Points: Strategically placed seating along bike routes provides needed rest areas.')
+        st.write('Shared Maintenance: Combined implementations can share maintenance resources and costs.')
+        st.write('Complete Streets: Integrating both interventions supports "complete streets" principles.')
+        st.write('Funding Opportunities: Combined projects may qualify for more diverse funding sources.')
         
         if selected_intervention == "Public Seating Management":
             # Get trade-offs data from results
             tradeoffs = results["tradeoffs"]
             
-            # Create a DataFrame from the trade-offs dictionary
-            df_tradeoffs = pd.DataFrame({
-                'Category': list(tradeoffs.keys()),
-                'Score': list(tradeoffs.values())
-            })
+            # # Create a DataFrame from the trade-offs dictionary
+            # df_tradeoffs = pd.DataFrame({
+            #     'Category': list(tradeoffs.keys()),
+            #     'Score': list(tradeoffs.values())
+            # })
             
-            # Display a horizontal bar chart for better visualization
-            st.write("Trade-offs Visualization:")
-            fig = px.bar(df_tradeoffs, 
-                        x='Score', 
-                        y='Category',
-                        orientation='h',
-                        labels={'Score': 'Impact (0-100)', 'Category': ''},
-                        color='Score',
-                        color_continuous_scale=['red', 'yellow', 'green'],
-                        range_x=[0, 100])
+            # # Display a horizontal bar chart for better visualization
+            # st.write("Trade-offs Visualization:")
+            # fig = px.bar(df_tradeoffs, 
+            #             x='Score', 
+            #             y='Category',
+            #             orientation='h',
+            #             labels={'Score': 'Impact (0-100)', 'Category': ''},
+            #             color='Score',
+            #             color_continuous_scale=['red', 'yellow', 'green'],
+            #             range_x=[0, 100])
                         
-            # Update layout for better readability
-            fig.update_layout(
-                height=400,
-                margin=dict(l=20, r=20, t=30, b=20),
-                yaxis=dict(autorange="reversed")  # Reverse y-axis for better readability
-            )
+            # # Update layout for better readability
+            # fig.update_layout(
+            #     height=400,
+            #     margin=dict(l=20, r=20, t=30, b=20),
+            #     yaxis=dict(autorange="reversed")  # Reverse y-axis for better readability
+            # )
             
-            st.plotly_chart(fig, use_container_width=True)
+            # st.plotly_chart(fig, use_container_width=True)
             
             # Add a radar chart as an alternative visualization
             categories = list(tradeoffs.keys())
@@ -275,24 +328,24 @@ with right_col:
             
             
             # Display a horizontal bar chart
-            st.write("Trade-offs Visualization:")
-            fig = px.bar(df_metrics, 
-                        x='Score', 
-                        y='Category',
-                        orientation='h',
-                        labels={'Score': 'Impact (0-100)', 'Category': ''},
-                        color='Score',
-                        color_continuous_scale=['red', 'yellow', 'green'],
-                        range_x=[0, 100])
+            # st.write("Trade-offs Visualization:")
+            # fig = px.bar(df_metrics, 
+            #             x='Score', 
+            #             y='Category',
+            #             orientation='h',
+            #             labels={'Score': 'Impact (0-100)', 'Category': ''},
+            #             color='Score',
+            #             color_continuous_scale=['red', 'yellow', 'green'],
+            #             range_x=[0, 100])
                         
-            # Update layout for better readability
-            fig.update_layout(
-                height=400,
-                margin=dict(l=20, r=20, t=30, b=20),
-                yaxis=dict(autorange="reversed")  # Reverse y-axis for better readability
-            )
+            # # Update layout for better readability
+            # fig.update_layout(
+            #     height=400,
+            #     margin=dict(l=20, r=20, t=30, b=20),
+            #     yaxis=dict(autorange="reversed")  # Reverse y-axis for better readability
+            # )
             
-            st.plotly_chart(fig, use_container_width=True)
+            # st.plotly_chart(fig, use_container_width=True)
 
 # Footer
 st.markdown("---")
