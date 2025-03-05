@@ -13,33 +13,24 @@ IMPLEMENTATION_LABELS = {
     2: "Full"
 }
 
-# Define corridor types from NYC DOT guidelines
-CORRIDOR_TYPES = {
-    "Baseline Street": {"width": "8'", "furnishing_zone": "3'", "walk_lane": "5'", "clear_path": "4'"},
-    "Community Connector": {"width": "10'", "furnishing_zone": "2'", "walk_lane": "8'", "clear_path": "5'"},
-    "Neighborhood Corridor": {"width": "15'", "furnishing_zone": "3'", "walk_lane": "12'", "clear_path": "8'"},
-    "Regional Corridor": {"width": "20'", "furnishing_zone": "5'", "walk_lane": "15'", "clear_path": "12'"},
-    "Global Corridor": {"width": "25'", "furnishing_zone": "5'", "walk_lane": "20'", "clear_path": "15'"}
-}
-
 # Define the intervention data
 INTERVENTIONS = {
     "Public Seating Management": {
         "description": "Increase bench and plaza numbers to create more vibrant public spaces",
         "parameters": {
             "seating_level": {
-                "label": "Seating Level",
+                "label": "Seating Implementation Level",
                 "min": 0,
                 "max": 2,
                 "default": 0,
-                "description": "Level of seating intervention: None, Minimal (2-10 benches), Extensive (>10)"
+                "description": "Level of seating intervention: None, Minimal (1-2 benches), Extensive (>=5)"
             },
             "plaza_level": {
-                "label": "Plaza Level",
+                "label": "Plaza Implementation Level",
                 "min": 0,
                 "max": 2,
                 "default": 0,
-                "description": "Level of plaza creation: None, Minimal (1-2 plazas), Extensive (3-5 plazas)"
+                "description": "Level of plaza creation: None, Minimal (1 plaza), Extensive (>=2 plazas)"
             }
         },
         "conflicts": [
@@ -52,14 +43,14 @@ INTERVENTIONS = {
         "description": "Improving bike infrastructure and connectivity throughout the district",
         "parameters": {
             "bike_lane_level": {
-                "label": "Bike Lane Coverage",
+                "label": "Dedicated Bike Lane Implementation Level",
                 "min": 0,
                 "max": 2,
                 "default": 0,
                 "description": "Level of bike lane coverage: None, Minimal (30%), Extensive (75%)"
             },
             "bike_share_level": {
-                "label": "Bike Share Stations",
+                "label": "Bike Share Stations Implementation Level",
                 "min": 0,
                 "max": 2,
                 "default": 0,

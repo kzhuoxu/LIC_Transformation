@@ -28,6 +28,17 @@ with left_col:
     # Add parameter controls section
     st.subheader("Adjust Parameters")
 
+    if selected_intervention == "Public Seating Management":
+        st.write('Seating Implementation Level Guide:')
+        st.write('0 - None, 1 - Minimal (1-2 benches), 2 - Extensive (>=5 benches)')
+        st.write('Plaza Implementation Level Guide:')
+        st.write('0 - None, 1 - Minimal (1 plaza), Extensive (>=2 plazas)')
+    elif selected_intervention == "Mobility Management":
+        st.write('Dedicated Bike Lane Implementation Level Guide:')
+        st.write('0 - None, 1 - Minimal, 2 - Extensive')
+        st.write('Bike Stations Implementation Level Guide:')
+        st.write('0 - None, 1 - Minimal, Extensive')
+
     # Create parameters dict to store the values
     params_values = {}
 
@@ -186,10 +197,6 @@ with right_col:
                 'Score': list(tradeoffs.values())
             })
             
-            # Display the DataFrame as a table
-            st.write("Trade-off metrics (scale: 0-100):")
-            st.dataframe(df_tradeoffs, use_container_width=True)
-            
             # Display a horizontal bar chart for better visualization
             st.write("Trade-offs Visualization:")
             fig = px.bar(df_tradeoffs, 
@@ -266,9 +273,6 @@ with right_col:
                 'Score': values
             })
             
-            # Display the DataFrame as a table
-            st.write("Trade-off metrics (scale: 0-100):")
-            st.dataframe(df_metrics, use_container_width=True)
             
             # Display a horizontal bar chart
             st.write("Trade-offs Visualization:")
