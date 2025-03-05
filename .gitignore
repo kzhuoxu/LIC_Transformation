@@ -1,4 +1,4 @@
 *.csv
-*.json
+data/bench
 *.xlsx
 .DS_Store
