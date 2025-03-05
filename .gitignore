@@ -1,4 +1,4 @@
-data/Forestry_Tree_Points.csv
-# data/NYC_BIDS_09112015.csv
-# data/parks/_parks.json
-# data/parks/Parks_Properties_20241031.csv
+*.csv
+*.json
+*.xlsx
+.DS_Store
