@@ -27,3 +27,11 @@ let showNeighborhoods = true;  // Whether to show neighborhood highlighting
 let showBikeRoutes = true;  // Whether to show bike routes
 let showCitibikeStations = true; // Whether to show Citibike stations
 let showCitibikeHexagons = false;  // For Citibike hexagons
+let showCitibikeCountData = false; // Whether to show Citibike count data as hexagons
+
+// Add these configuration variables for the simulation
+let simulationMode = false; // Whether simulation mode is active
+let simulationStationPosition = [...initialQRPosition]; // Position of simulated station
+let simulationStationCapacity = 20; // Default capacity of the simulated station
+let simulationStationRange = 0.003; // Influence range (in coordinates)
+let simulationStationImpact = 0.5; // Impact factor (0-1) of new station on existing stations

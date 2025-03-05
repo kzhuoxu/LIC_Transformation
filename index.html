@@ -69,6 +69,43 @@
       </label>
     </div>
 
+    <div class="control-group">
+      <label>
+        <input type="checkbox" id="citibike-count-toggle">
+        Show Citibike Trips
+      </label>
+    </div>
+
+
+    <!-- Add these controls to your controls section -->
+    <div class="control-group">
+      <label>
+        <input type="checkbox" id="simulation-toggle">
+        Simulation Mode
+      </label>
+    </div>
+
+    <div id="simulation-controls"
+      style="display: none; padding: 10px; background-color: rgba(255,255,255,0.8); margin-top: 10px; border-radius: 5px;">
+      <h4>New Station Simulation</h4>
+
+      <div class="control-group">
+        <label>Station Capacity: <span id="capacity-value">20</span></label>
+        <input type="range" id="station-capacity" min="5" max="50" value="20">
+      </div>
+
+      <div class="control-group">
+        <label>Influence Range: <span id="range-value">3.0</span></label>
+        <input type="range" id="station-range" min="0.5" max="6.0" step="0.1" value="3.0">
+      </div>
+
+      <div class="control-group">
+        <label>Impact Factor: <span id="impact-value">0.50</span></label>
+        <input type="range" id="station-impact" min="0.1" max="1.0" step="0.05" value="0.5">
+      </div>
+
+      <button id="use-qr-position" class="btn btn-primary btn-sm">Use QR Position</button>
+    </div>
   </div>
   <div id="tooltip"></div>
 

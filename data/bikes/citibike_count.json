@@ -1,0 +1,98 @@
+[
+    {
+        "station_name": "Skillman Ave & 43 Ave",
+        "start_count": 677.0,
+        "end_count": 678.0,
+        "total_count": 1355.0,
+        "lat": 40.746538,
+        "lon": -73.932158
+    },
+    {
+        "station_name": "31 St & Thomson Ave",
+        "start_count": 545.0,
+        "end_count": 548.0,
+        "total_count": 1093.0,
+        "lat": 40.744697,
+        "lon": -73.935404
+    },
+    {
+        "station_name": "39 St & Queens Blvd",
+        "start_count": 543.0,
+        "end_count": 532.0,
+        "total_count": 1075.0,
+        "lat": 40.744333,
+        "lon": -73.926026
+    },
+    {
+        "station_name": "47 Ave & 31 St",
+        "start_count": 457.0,
+        "end_count": 462.0,
+        "total_count": 919.0,
+        "lat": 40.742973,
+        "lon": -73.935510
+    },
+    {
+        "station_name": "33 St & Queens Blvd",
+        "start_count": 451.0,
+        "end_count": 450.0,
+        "total_count": 901.0,
+        "lat": 40.744282,
+        "lon": -73.931721
+    },
+    {
+        "station_name": "36 St & Queens Blvd",
+        "start_count": 440.0,
+        "end_count": 431.0,
+        "total_count": 871.0,
+        "lat": 40.743990,
+        "lon": -73.929044
+    },
+    {
+        "station_name": "33 St & 47 Ave",
+        "start_count": 232.0,
+        "end_count": 236.0,
+        "total_count": 468.0,
+        "lat": 40.742821,
+        "lon": -73.932128
+    },
+    {
+        "station_name": "36 St & 47 Ave",
+        "start_count": 188.0,
+        "end_count": 185.0,
+        "total_count": 373.0,
+        "lat": 40.742185,
+        "lon": -73.929338
+    },
+    {
+        "station_name": "Skillman Ave & Honeywell St",
+        "start_count": 184.0,
+        "end_count": 182.0,
+        "total_count": 366.0,
+        "lat": 40.747162,
+        "lon": -73.929083
+    },
+    {
+        "station_name": "49 Ave & 27 St",
+        "start_count": 175.0,
+        "end_count": 183.0,
+        "total_count": 358.0,
+        "lat": 40.741122,
+        "lon": -73.942584
+    },
+    {
+        "station_name": "29 St & Skillman Ave",
+        "start_count": 172.0,
+        "end_count": 164.0,
+        "total_count": 336.0,
+        "lat": 40.744809,
+        "lon": -73.938473
+    },
+    {
+        "station_name": "47 Ave & Skillman Ave",
+        "start_count": 151.0,
+        "end_count": 154.0,
+        "total_count": 305.0,
+        "lat": 40.743712,
+        "lon": -73.941834
+    }
+]

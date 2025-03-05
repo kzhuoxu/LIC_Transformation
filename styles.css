@@ -25,7 +25,8 @@ body {
   height: 240px;
   border: 2px solid #fff;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  z-index: 1000; /* Increased z-index */
+  z-index: 1000;
+  /* Increased z-index */
 }
 
 #toggle-container {
@@ -36,7 +37,8 @@ body {
   background: white;
   border-radius: 4px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  z-index: 1000; /* Increased z-index */
+  z-index: 1000;
+  /* Increased z-index */
 }
 
 #instructions {
@@ -71,7 +73,8 @@ slider-container {
   border-radius: 4px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   pointer-events: none;
-  z-index: 1001; /* Highest z-index to always show on top */
+  z-index: 1001;
+  /* Highest z-index to always show on top */
 }
 
 #manual-controls {
@@ -81,4 +84,34 @@ slider-container {
 
 #manual-controls button {
   margin: 2px;
+}
+
+/* Add these styles to your CSS */
+#simulation-controls {
+  max-width: 300px;
+}
+
+#simulation-controls h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+#simulation-controls .control-group {
+  margin-bottom: 15px;
+}
+
+#simulation-controls label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+#simulation-controls input[type="range"] {
+  width: 100%;
+}
+
+#use-qr-position {
+  margin-top: 5px;
+  width: 100%;
+  padding: 5px;
 }

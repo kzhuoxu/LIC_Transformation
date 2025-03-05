@@ -61,6 +61,15 @@ function initializeControls() {
     updateLayers();
   });
 
+  // Add Citibike count data toggle
+  document.getElementById("citibike-count-toggle").addEventListener("change", (event) => {
+    showCitibikeCountData = event.target.checked;
+    updateLayers();
+  });
+
+  // Initialize simulation controls
+  initializeSimulationControls();
+
 
   // Manual movement buttons
   document.getElementById("move-up").addEventListener("click", () => {
@@ -80,6 +89,67 @@ function initializeControls() {
 
   document.getElementById("move-right").addEventListener("click", () => {
     QRPosition[0] += 0.0001;
+    updateLayers();
+  });
+}
+
+function initializeSimulationControls() {
+  // Toggle for simulation mode
+  document.getElementById("simulation-toggle").addEventListener("change", (event) => {
+    simulationMode = event.target.checked;
+
+    // Show or hide simulation controls based on simulation mode
+    const simulationControls = document.getElementById("simulation-controls");
+    if (simulationControls) {
+      simulationControls.style.display = simulationMode ? "block" : "none";
+    }
+
+    // Always sync simulation station position with QR position when enabling
+    if (simulationMode) {
+      simulationStationPosition = [...QRPosition];
+    }
+
+    updateLayers();
+  });
+
+  // Capacity slider
+  document.getElementById("station-capacity").addEventListener("input", (event) => {
+    simulationStationCapacity = parseInt(event.target.value);
+    document.getElementById("capacity-value").textContent = simulationStationCapacity;
+    updateLayers();
+  });
+  // Range slider
+  document.getElementById("station-range").addEventListener("input", (event) => {
+    simulationStationRange = parseFloat(event.target.value) / 1000; // Convert to coordinate units
+    document.getElementById("range-value").textContent = (simulationStationRange * 1000).toFixed(1);
+    updateLayers();
+  });
+
+  // Impact slider
+  document.getElementById("station-impact").addEventListener("input", (event) => {
+    simulationStationImpact = parseFloat(event.target.value);
+    document.getElementById("impact-value").textContent = simulationStationImpact.toFixed(2);
+    updateLayers();
+  });
+
+  // Position button
+  document.getElementById("use-qr-position").addEventListener("click", () => {
+    // Reset simulation to default values
+    simulationStationCapacity = 20; // Reset to default
+    document.getElementById("station-capacity").value = 20;
+    document.getElementById("capacity-value").textContent = 20;
+
+    simulationStationRange = 0.003; // Reset to default
+    document.getElementById("station-range").value = 3.0;
+    document.getElementById("range-value").textContent = "3.0";
+
+    simulationStationImpact = 0.5; // Reset to default
+    document.getElementById("station-impact").value = 0.5;
+    document.getElementById("impact-value").textContent = "0.50";
+
+    // Ensure position is synced
+    simulationStationPosition = [...QRPosition];
+
     updateLayers();
   });
 }
